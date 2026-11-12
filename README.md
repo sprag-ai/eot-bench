@@ -303,6 +303,9 @@ GRADIUM_API_KEY=...
 BATON_API_KEY=...
 # Optional: override the Baton endpoint (e.g. a local server).
 # BATON_BASE_URL=https://baton.joinin.ai
+SPRAG_API_KEY=...
+# Optional: override the Sprag Turns endpoint.
+# SPRAG_TURNS_URL=wss://api.sprag.ai/v1/turns
 ```
 
 <details>
@@ -622,6 +625,7 @@ Built-in adapter examples:
 - `eot_harness.openai_realtime_adapter:OpenAIRealtime2Adapter`
 - `eot_harness.gradium_adapter:GradiumStreamingAdapter`
 - `eot_harness.baton_adapter:BatonAdapter`
+- `eot_harness.sprag_turns_adapter:SpragTurnsAdapter`
 - `eot_harness.p99lab_turn_adapter:P99LabTurn1Adapter`
 - `eot_harness.p99lab_turn_adapter:P99LabTurn1MiniAdapter`
 
@@ -652,6 +656,25 @@ judgement, and receives the full `p_eot` grid for the turn in one response.
 Scores are read at the 0.2s silence point, the same basis as the LiveKit and
 SmartTurn adapters. It requires `BATON_API_KEY` and targets
 `https://baton.joinin.ai` by default; set `BATON_BASE_URL` to override.
+
+`SpragTurnsAdapter` replays each turn in real time over the Sprag Turns
+WebSocket (`wss://api.sprag.ai/v1/turns`), an English audio end-of-turn model,
+and scores its `turn.update` readings: a probability-valued `p_eot` roughly every
+100ms of silence, timed by when it arrives. The session switches off the
+server's own turn decision (`eot_threshold` 1.0, a 60s timeout), so the
+harness's policy sweep is the only policy. The adapter sends the last assistant
+message from `messages` as context, never the words of the turn under
+judgement. It requires `SPRAG_API_KEY`; set `SPRAG_TURNS_URL` to override the
+endpoint. Run it with `predict-streaming`:
+
+```bash
+eot-harness predict-streaming \
+  --path livekit/eot-bench-data \
+  --name en \
+  --split validation \
+  --adapter eot_harness.sprag_turns_adapter:SpragTurnsAdapter \
+  --output-dir output
+```
 
 `P99LabTurn1Adapter` and `P99LabTurn1MiniAdapter` score each prediction with
 the open-weight p99lab models; see [p99lab turn-1 and turn-1-mini](#p99lab-turn-1-and-turn-1-mini).
